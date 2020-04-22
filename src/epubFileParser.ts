@@ -1,4 +1,5 @@
 import { EPub } from 'epub2';
+import { Result } from 'booqs-core';
 
 export type EpubSection = {
     filePath: string,
@@ -6,24 +7,22 @@ export type EpubSection = {
     content: string,
 };
 export type EpubMetadata = {
-    [key: string]: string | string[] | undefined;
+    [key: string]: string | string[] | undefined,
 };
-export type EpubBook = {
+export type EpubFile = {
     rawMetadata: any,
     metadata: EpubMetadata,
     imageResolver(id: string): Promise<Buffer | undefined>,
     sections(): AsyncGenerator<EpubSection>,
 };
 
-export type EpubFileParserInput = {
+export async function epubFileParser({ filePath }: {
     filePath: string,
-};
-
-export async function epubFileParser(input: EpubFileParserInput) {
+}): Promise<Result<EpubFile>> {
     try {
-        const epub = await FixedEpub.createAsync(input.filePath) as FixedEpub;
+        const epub = await FixedEpub.createAsync(filePath) as FixedEpub;
 
-        const book: EpubBook = {
+        const book: EpubFile = {
             rawMetadata: getRawData(epub.metadata),
             metadata: extractMetadata(epub),
             imageResolver: async href => {

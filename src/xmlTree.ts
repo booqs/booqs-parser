@@ -1,4 +1,5 @@
 import * as parseXmlLib from '@rgrove/parse-xml';
+import type { Result } from 'booqs-core';
 
 export type XmlStringParserInput = {
     xmlString: string,
@@ -6,7 +7,7 @@ export type XmlStringParserInput = {
     removeTrailingWhitespaces?: boolean,
 };
 
-export function xmlStringParser(input: XmlStringParserInput) {
+export function xmlStringParser(input: XmlStringParserInput): Result<XmlDocument> {
     try {
         let tree = parseXmlLib(input.xmlString, {
             preserveComments: input.preserveComments || false,
@@ -31,7 +32,7 @@ export type XmlBase<T extends string> = {
     type: T,
     parent: Xml,
 };
-type NoName = { name?: undefined };
+type NoName = { name?: undefined, };
 export type XmlWithParent<T extends string> = XmlBase<T> & {
     parent: XmlWithChildren,
 };
@@ -47,9 +48,9 @@ export type XmlElement = XmlBase<'element'> & {
     attributes: XmlAttributes,
     children: Xml[],
 };
-export type XmlText = XmlBase<'text'> & { text: string } & NoName;
-export type XmlCData = XmlBase<'cdata'> & { text: string } & NoName;
-export type XmlComment = XmlBase<'comment'> & { content: string } & NoName;
+export type XmlText = XmlBase<'text'> & { text: string, } & NoName;
+export type XmlCData = XmlBase<'cdata'> & { text: string, } & NoName;
+export type XmlComment = XmlBase<'comment'> & { content: string, } & NoName;
 
 export type XmlType = Xml['type'];
 
@@ -78,6 +79,7 @@ export function makeXmlText(text: string, parent?: XmlWithChildren): XmlText {
     return {
         type: 'text',
         text,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         parent: parent!,
     };
 }
@@ -93,6 +95,7 @@ export function makeXmlElement(
         name: name,
         children: children || [],
         attributes: attrs || {},
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         parent: parent!,
     };
 }
@@ -126,7 +129,7 @@ export function attributesToString(attr: XmlAttributes): string {
     return result;
 }
 
-export function xml2string(xml: Xml, depth: number = 1): string {
+export function xml2string(xml: Xml, depth = 1): string {
     switch (xml.type) {
         case 'element':
         case 'document': {
@@ -198,7 +201,9 @@ export function extractAllText(xml: Xml): string {
     }
 }
 
-function assertNever(x: never) { }
+function assertNever(x: never) {
+    return x;
+}
 
 export function isWhitespaces(input: string): boolean {
     return input.match(/^\s*$/) ? true : false;

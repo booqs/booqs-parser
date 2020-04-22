@@ -1,0 +1,11 @@
+# ignore node modules
+node_modules
+
+# ignore source files
+src/**/*
+
+# ignore settings
+.vscode/*
+.eslintrc.js
+tsconfig.json
+dist/tsconfig.tsbuildinfo

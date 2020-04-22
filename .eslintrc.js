@@ -4,7 +4,9 @@ module.exports = {
     es6: true
   },
   extends: [
-    'standard'
+    'eslint:recommended',
+    'plugin:@typescript-eslint/eslint-recommended',
+    'plugin:@typescript-eslint/recommended',
   ],
   globals: {
     Atomics: 'readonly',
@@ -19,6 +21,19 @@ module.exports = {
     '@typescript-eslint'
   ],
   rules: {
+    "@typescript-eslint/member-delimiter-style": ["error", {
+      "multiline": {
+        "delimiter": "comma",
+        "requireLast": true
+      },
+      "singleline": {
+        "delimiter": "comma",
+        "requireLast": true
+      },
+    }],
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-use-before-define": "off",
     "space-before-function-paren": "off",
     "indent": "off",
     "semi": ["error", "always"],
