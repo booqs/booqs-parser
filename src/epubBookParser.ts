@@ -1,6 +1,8 @@
-import { epubFileParser, EpubSection } from './epubFileParser';
+import {
+    BooqNode, Result, Diagnostic, Booq, mapNode,
+} from 'booqs-core';
 import { xmlStringParser, XmlDocument, xml2string, Xml } from './xmlTree';
-import { BooqNode, Result, Diagnostic, Booq } from 'booqs-core';
+import { epubFileParser, EpubSection, EpubFile } from './epubFileParser';
 
 export async function parseEpub({ filePath }: {
     filePath: string,
@@ -13,7 +15,7 @@ export async function parseEpub({ filePath }: {
     const nodes: BooqNode[] = [];
     const allDiags: Diagnostic[] = [];
     for await (const section of epub.sections()) {
-        const { value, diags } = parseSection(section);
+        const { value, diags } = parseSection(section, epub);
         if (value) {
             nodes.push(...value);
         }
@@ -36,7 +38,7 @@ export async function parseEpub({ filePath }: {
     };
 }
 
-function parseSection(section: EpubSection): Result<BooqNode[]> {
+function parseSection(section: EpubSection, file: EpubFile): Result<BooqNode[]> {
     const { value: document, diags } = xmlStringParser({
         xmlString: section.content,
         removeTrailingWhitespaces: false,
@@ -44,12 +46,6 @@ function parseSection(section: EpubSection): Result<BooqNode[]> {
     if (!document) {
         return { diags };
     }
-
-    const nodes = documentParser(document);
-    return nodes;
-}
-
-function documentParser(document: XmlDocument): Result<BooqNode[]> {
     const html = document.children
         .find(n => n.name === 'html');
     if (html === undefined || html.type !== 'element') {
@@ -73,9 +69,25 @@ function documentParser(document: XmlDocument): Result<BooqNode[]> {
         };
     }
 
+    const nodes = xmls2nodes(body.children);
+    const resolved = nodes.map(
+        node => mapNode(node, n => resolveNode(n, section, file)),
+    );
+
     return {
-        value: xmls2nodes(body.children),
+        value: resolved,
     };
+}
+
+function resolveNode(node: BooqNode, section: EpubSection, file: EpubFile): BooqNode {
+    if (node.attrs && node.attrs.id) {
+        return {
+            ...node,
+            id: `${section.filePath}/${node.attrs.id}`,
+        };
+    } else {
+        return node;
+    }
 }
 
 function xmls2nodes(xmls: Xml[]): BooqNode[] {
