@@ -23,5 +23,7 @@ module.exports = {
     "indent": ["error", 4],
     "semi": ["error", "always"],
     "quotes": ["error", "single"],
+    "generator-star-spacing": ["error", "after"],
+    "comma-dangle": ["off", "always"],
   },
 }
