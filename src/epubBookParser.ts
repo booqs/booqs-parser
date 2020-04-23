@@ -34,6 +34,7 @@ export async function parseEpub({ filePath }: {
                 items: [],
                 length: 0,
             },
+            images: {},
         };
     });
 }
