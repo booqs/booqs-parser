@@ -13,6 +13,7 @@ export type EpubFile = {
     rawMetadata: any,
     metadata: EpubMetadata,
     itemResolver(id: string): Promise<Buffer | undefined>,
+    imageResolver(id: string): Promise<Buffer | undefined>,
     sections(): AsyncGenerator<EpubSection>,
 };
 
@@ -22,17 +23,29 @@ export async function epubFileParser({ filePath }: {
     try {
         const epub = await FixedEpub.createAsync(filePath) as FixedEpub;
 
+        function resolveHref(href: string) {
+            const items = listItems(epub);
+            const idItem = items
+                .find(item => item.href && item.href.endsWith(href));
+            return idItem?.id;
+        }
         const book: EpubFile = {
             rawMetadata: getRawData(epub.metadata),
             metadata: extractMetadata(epub),
-            itemResolver: async href => {
-                const items = listItems(epub);
-                const idItem = items
-                    .find(item => item.href && item.href.endsWith(href));
-                if (!idItem || !idItem.id) {
+            imageResolver: async href => {
+                const itemId = resolveHref(href);
+                if (!itemId) {
                     return undefined;
                 }
-                const [buffer] = await epub.getImageAsync(idItem.id);
+                const [buffer] = await epub.getImageAsync(itemId);
+                return buffer;
+            },
+            itemResolver: async href => {
+                const itemId = resolveHref(href);
+                if (!itemId) {
+                    return undefined;
+                }
+                const [buffer] = await epub.getFileAsync(itemId);
                 return buffer;
             },
             sections: async function* () {
