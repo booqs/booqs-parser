@@ -4,7 +4,7 @@ import {
 import { xmlStringParser, xml2string, XmlElement } from './xmlTree';
 import { epubFileParser, EpubSection, EpubFile } from './epubFileParser';
 import { processXmls } from './node';
-import { parseCss, Stylesheet } from './css';
+import { parseCss, Stylesheet, StyleRule } from './css';
 import { Result, genAsyncResult } from './result';
 
 export async function parseEpub({ filePath }: {
@@ -46,10 +46,11 @@ async function parseSection(section: EpubSection, file: EpubFile): Promise<Resul
             return;
         }
 
-        const { body } = bodyResult;
+        const { body, stylesheet } = bodyResult;
         const results = await processXmls(body.children, {
             filePath: section.filePath,
             imageResolver: file.itemResolver,
+            stylesheet,
         });
         for (const r of results) {
             yield* r.diags;
@@ -78,13 +79,13 @@ async function getBody(section: EpubSection, file: EpubFile) {
             return;
         }
 
-        let styles: Stylesheet[] = [];
+        let stylesheet: Stylesheet = { rules: [] };
         const head = html.children
             .find(n => n.name === 'head');
         if (head?.name !== undefined) {
             const cssResult = await loadCss(head, file.itemResolver);
-            styles = cssResult.value ?? [];
             yield* cssResult.diags;
+            stylesheet = cssResult.value ?? stylesheet;
         }
         const body = html.children
             .find(n => n.name === 'body');
@@ -96,13 +97,13 @@ async function getBody(section: EpubSection, file: EpubFile) {
             return;
         }
 
-        return { body, styles };
+        return { body, stylesheet };
     });
 }
 
 async function loadCss(head: XmlElement, itemResolver: (id: string) => Promise<Buffer | undefined>) {
     return genAsyncResult(async function* () {
-        const results: Stylesheet[] = [];
+        const rules: StyleRule[] = [];
         for (const el of head.children) {
             if (el.name === 'link' && el.attributes.rel === 'stylesheet') {
                 if (el.attributes.href === undefined) {
@@ -120,13 +121,13 @@ async function loadCss(head: XmlElement, itemResolver: (id: string) => Promise<B
                         const content = buffer.toString('utf8');
                         const result = parseCss(content);
                         if (result.value) {
-                            results.push(result.value);
+                            rules.push(...result.value.rules);
                         }
                         yield* result.diags;
                     }
                 }
             }
         }
-        return results;
+        return { rules };
     });
 }

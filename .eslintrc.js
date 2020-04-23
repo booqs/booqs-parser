@@ -34,6 +34,7 @@ module.exports = {
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-use-before-define": "off",
+    "@typescript-eslint/no-non-null-assertion": "off",
     "space-before-function-paren": "off",
     "indent": "off",
     "semi": ["error", "always"],

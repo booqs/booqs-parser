@@ -1,3 +1,5 @@
+import { flatten } from 'booqs-core';
+
 export type Diagnostic = {
     diag: string,
     data?: object,
@@ -12,6 +14,13 @@ export type Failure = {
 };
 
 export type Result<T> = Success<T> | Failure;
+
+export function combineResults<T>(results: Array<Result<T>>): Result<Array<T | undefined>> {
+    return {
+        value: results.map(r => r.value),
+        diags: flatten(results.map(r => r.diags)),
+    };
+}
 
 export type ResultGen<T> = Generator<Diagnostic, T | undefined>;
 export function resultFromGen<T>(gen: ResultGen<T>): Result<T> {

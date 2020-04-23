@@ -24,12 +24,17 @@ type DescendantSelector = {
     ancestor: Selector,
     descendant: Selector,
 };
+type SomeOfSelector = {
+    selector: 'some',
+    selectors: Selector[],
+};
 
-type CompositeSelector = DescendantSelector;
+type CompositeSelector =
+    | DescendantSelector | SomeOfSelector;
 
 export type Selector = SimpleSelector | CompositeSelector;
 
-export function selectXml(xml: Xml, selector: Selector) {
+export function selectXml(xml: Xml, selector: Selector): boolean {
     switch (selector.selector) {
         case 'class':
             return hasClass(xml, selector.class);
@@ -48,6 +53,9 @@ export function selectXml(xml: Xml, selector: Selector) {
             }
             return false;
         }
+        case 'some':
+            return selector.selectors
+                .some(sel => selectXml(xml, sel));
         default:
             assertNever(selector);
             return false;

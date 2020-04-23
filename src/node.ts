@@ -1,10 +1,13 @@
-import { BooqNode, BooqElementNode } from 'booqs-core';
+import { BooqNode, BooqElementNode, BooqNodeStyle, flatten } from 'booqs-core';
 import { Xml, XmlElement, xml2string } from './xmlTree';
 import { Success, Diagnostic } from './result';
+import { Stylesheet } from './css';
+import { selectXml } from './selectors';
 
 type Env = {
     filePath: string,
     imageResolver: (src: string) => Promise<Buffer | undefined>,
+    stylesheet: Stylesheet,
 };
 export async function processXmls(xmls: Xml[], env: Env) {
     return Promise.all(
@@ -49,9 +52,9 @@ async function processXmlElement(element: XmlElement, env: Env): Promise<Success
                     ...buildNodeFields(element, env),
                     children: results.map(r => r.value),
                 },
-                diags: results.reduce(
+                diags: results.reduce<Diagnostic[]>(
                     (ds, r) => r.diags ? [...ds, ...r.diags] : ds,
-                    [] as Diagnostic[],
+                    [],
                 ),
             };
         }
@@ -118,7 +121,7 @@ async function processImgXmlElement(element: XmlElement, env: Env): Promise<Succ
 }
 
 function buildNodeFields(xml: XmlElement, env: Env) {
-    const result: Pick<BooqElementNode, 'id' | 'attrs'> = {};
+    const result: Pick<BooqElementNode, 'id' | 'attrs' | 'style'> = {};
     const { id, ...rest } = xml.attributes;
     if (id !== undefined) {
         result.id = fullId(id, env.filePath);
@@ -126,9 +129,32 @@ function buildNodeFields(xml: XmlElement, env: Env) {
     if (Object.keys(rest).length > 0) {
         result.attrs = rest;
     }
+    const style = getStyle(xml, env);
+    if (style) {
+        result.style = style;
+    }
     return result;
 }
 
 function fullId(id: string, filePath: string) {
     return `${filePath}/${id}`;
+}
+
+function getStyle(xml: Xml, env: Env) {
+    const rules = getRules(xml, env);
+    const declarations = flatten(rules.map(r => r.content));
+    if (declarations.length === 0) {
+        return undefined;
+    }
+    const style: BooqNodeStyle = {};
+    for (const decl of declarations) {
+        style[decl.property] = decl.value;
+    }
+    return style;
+}
+
+function getRules(xml: Xml, env: Env) {
+    return env.stylesheet.rules.filter(
+        rule => selectXml(xml, rule.selector),
+    );
 }
