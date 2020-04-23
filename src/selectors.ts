@@ -31,7 +31,7 @@ export function parseSelector(sel: string): Result<Selector> {
     const result = selectorParser(sel);
     if (result.success) {
         // TODO: assert empty next
-        return { value: result.value };
+        return { value: result.value, diags: [] };
     } else {
         return {
             diags: [{

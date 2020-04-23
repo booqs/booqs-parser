@@ -53,7 +53,7 @@ export async function epubFileParser({ filePath }: {
             },
         };
 
-        return { value: book };
+        return { value: book, diags: [] };
     } catch (e) {
         return {
             diags: [{

@@ -4,17 +4,17 @@ export type Diagnostic = {
 };
 export type Success<T> = {
     value: T,
-    diags?: Diagnostic[],
+    diags: Diagnostic[],
 };
 export type Failure = {
     value?: undefined,
-    diags?: Diagnostic[],
+    diags: Diagnostic[],
 };
 
 export type Result<T> = Success<T> | Failure;
 
 export type ResultGen<T> = Generator<Diagnostic, T | undefined>;
-export function genResult<T>(gen: ResultGen<T>): Result<T> {
+export function resultFromGen<T>(gen: ResultGen<T>): Result<T> {
     const diags: Diagnostic[] = [];
     let next = gen.next();
     while (!next.done) {
@@ -28,9 +28,12 @@ export function genResult<T>(gen: ResultGen<T>): Result<T> {
         return { diags };
     }
 }
+export function genResult<T>(genFn: () => ResultGen<T>) {
+    return resultFromGen(genFn());
+}
 
 export type ResultAsyncGen<T> = AsyncGenerator<Diagnostic, T | undefined>;
-export async function genAsyncResult<T>(gen: ResultAsyncGen<T>): Promise<Result<T>> {
+export async function resultFromAsyncGen<T>(gen: ResultAsyncGen<T>): Promise<Result<T>> {
     const diags: Diagnostic[] = [];
     let next = await gen.next();
     while (!next.done) {
@@ -43,4 +46,7 @@ export async function genAsyncResult<T>(gen: ResultAsyncGen<T>): Promise<Result<
     } else {
         return { diags };
     }
+}
+export function genAsyncResult<T>(genFn: () => ResultAsyncGen<T>) {
+    return resultFromAsyncGen(genFn());
 }

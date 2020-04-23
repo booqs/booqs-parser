@@ -19,7 +19,7 @@ export function xmlStringParser(input: XmlStringParserInput): Result<XmlDocument
                 children: removeTrailingWhitespaces(tree.children),
             };
         }
-        return { value: tree };
+        return { value: tree, diags: [] };
     } catch (e) {
         return { diags: [{ diag: 'exception', data: e }] };
     }

@@ -33,5 +33,6 @@ export function parseCss(css: string): Result<Stylesheet> {
         value: {
             rules: transformed,
         },
+        diags: [],
     };
 }

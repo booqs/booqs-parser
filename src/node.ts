@@ -20,6 +20,7 @@ async function processXml(xml: Xml, env: Env): Promise<Success<BooqNode>> {
                     node: 'text',
                     content: xml.text,
                 },
+                diags: [],
             };
         case 'element':
             return processXmlElement(xml, env);
@@ -82,6 +83,7 @@ async function processImgXmlElement(element: XmlElement, env: Env): Promise<Succ
                     },
                     ...buildNodeFields(element, env),
                 },
+                diags: [],
             };
         } else {
             return {
