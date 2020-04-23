@@ -18,7 +18,7 @@ async function processXml(xml: Xml, env: Env): Promise<Success<BooqNode>> {
                 value: {
                     node: 'text',
                     content: xml.text,
-                }
+                },
             };
         case 'element':
             return processXmlElement(xml, env);
@@ -30,7 +30,7 @@ async function processXml(xml: Xml, env: Env): Promise<Success<BooqNode>> {
                 diags: [{
                     diag: 'unexpected node',
                     data: { xml: xml2string(xml) },
-                }]
+                }],
             };
     }
 }
@@ -49,7 +49,7 @@ async function processXmlElement(element: XmlElement, env: Env): Promise<Success
                 },
                 diags: results.reduce(
                     (ds, r) => r.diags ? [...ds, ...r.diags] : ds,
-                    [] as Diagnostic[]
+                    [] as Diagnostic[],
                 ),
             };
         }
@@ -80,7 +80,7 @@ async function processImgXmlElement(element: XmlElement, env: Env): Promise<Succ
                         base64: Buffer.from(buffer).toString('base64'),
                     },
                     ...buildNodeFields(element, env),
-                }
+                },
             };
         } else {
             return {
