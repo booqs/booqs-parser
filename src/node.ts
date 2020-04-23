@@ -1,5 +1,6 @@
-import { Success, BooqNode, BooqElementNode, Diagnostic } from 'booqs-core';
+import { BooqNode, BooqElementNode } from 'booqs-core';
 import { Xml, XmlElement, xml2string } from './xmlTree';
+import { Success, Diagnostic } from './result';
 
 type Env = {
     filePath: string,

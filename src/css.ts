@@ -1,5 +1,5 @@
 import { parse, Rule, Declaration } from 'css';
-import { Result } from 'booqs-core';
+import { Result } from './result';
 
 export type StyleRuleContent = {
     [p in string]?: string;
@@ -31,7 +31,7 @@ export function parseCss(css: string): Result<Stylesheet> {
 
     return {
         value: {
-            rules: transformed
+            rules: transformed,
         },
     };
 }

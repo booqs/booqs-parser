@@ -1,5 +1,3 @@
-import { Result } from 'booqs-core';
-
 export type ParserResult<T> = {
     success: true,
     value: T,

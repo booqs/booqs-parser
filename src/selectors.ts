@@ -1,5 +1,5 @@
-import { Result } from 'booqs-core';
 import { regex, project, Parser, choice, sequence } from './stringParser';
+import { Result } from './result';
 
 type ElementSelector = {
     selector: 'element',

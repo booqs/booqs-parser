@@ -1,5 +1,5 @@
 import { EPub } from 'epub2';
-import { Result } from 'booqs-core';
+import { Result } from './result';
 
 export type EpubSection = {
     filePath: string,

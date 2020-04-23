@@ -1,10 +1,11 @@
 import {
-    BooqNode, Result, Diagnostic, Booq, flatten,
+    BooqNode, Booq, flatten,
 } from 'booqs-core';
 import { xmlStringParser, xml2string, XmlElement } from './xmlTree';
 import { epubFileParser, EpubSection, EpubFile } from './epubFileParser';
 import { processXmls } from './node';
 import { parseCss, Stylesheet } from './css';
+import { Result, Diagnostic } from './result';
 
 export async function parseEpub({ filePath }: {
     filePath: string,

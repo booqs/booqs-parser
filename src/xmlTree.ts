@@ -1,5 +1,5 @@
 import * as parseXmlLib from '@rgrove/parse-xml';
-import type { Result } from 'booqs-core';
+import { Result } from './result';
 
 export type XmlStringParserInput = {
     xmlString: string,
