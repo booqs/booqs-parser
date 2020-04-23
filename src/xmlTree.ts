@@ -32,7 +32,7 @@ export type XmlBase<T extends string> = {
     type: T,
     parent: Xml,
 };
-type NoName = { name?: undefined, };
+type NotElement = { name?: undefined, attributes?: undefined, };
 export type XmlWithParent<T extends string> = XmlBase<T> & {
     parent: XmlWithChildren,
 };
@@ -42,15 +42,15 @@ export type XmlDocument = {
     type: 'document',
     children: Xml[],
     parent: undefined,
-} & NoName;
+} & NotElement;
 export type XmlElement = XmlBase<'element'> & {
     name: string,
     attributes: XmlAttributes,
     children: Xml[],
 };
-export type XmlText = XmlBase<'text'> & { text: string, } & NoName;
-export type XmlCData = XmlBase<'cdata'> & { text: string, } & NoName;
-export type XmlComment = XmlBase<'comment'> & { content: string, } & NoName;
+export type XmlText = XmlBase<'text'> & { text: string, } & NotElement;
+export type XmlCData = XmlBase<'cdata'> & { text: string, } & NotElement;
+export type XmlComment = XmlBase<'comment'> & { content: string, } & NotElement;
 
 export type XmlType = Xml['type'];
 
