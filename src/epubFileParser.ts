@@ -12,7 +12,7 @@ export type EpubMetadata = {
 export type EpubFile = {
     rawMetadata: any,
     metadata: EpubMetadata,
-    imageResolver(id: string): Promise<Buffer | undefined>,
+    itemResolver(id: string): Promise<Buffer | undefined>,
     sections(): AsyncGenerator<EpubSection>,
 };
 
@@ -25,7 +25,7 @@ export async function epubFileParser({ filePath }: {
         const book: EpubFile = {
             rawMetadata: getRawData(epub.metadata),
             metadata: extractMetadata(epub),
-            imageResolver: async href => {
+            itemResolver: async href => {
                 const items = listItems(epub);
                 const idItem = items
                     .find(item => item.href && item.href.endsWith(href));

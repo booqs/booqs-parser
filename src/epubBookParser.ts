@@ -1,9 +1,10 @@
 import {
     BooqNode, Result, Diagnostic, Booq, flatten,
 } from 'booqs-core';
-import { xmlStringParser, xml2string } from './xmlTree';
+import { xmlStringParser, xml2string, XmlElement } from './xmlTree';
 import { epubFileParser, EpubSection, EpubFile } from './epubFileParser';
 import { processXmls } from './node';
+import { parseCss, Stylesheet } from './css';
 
 export async function parseEpub({ filePath }: {
     filePath: string,
@@ -40,23 +41,24 @@ export async function parseEpub({ filePath }: {
 }
 
 async function parseSection(section: EpubSection, file: EpubFile): Promise<Result<BooqNode[]>> {
-    const { value: body, diags: bodyDiags } = await getBody(section);
-    if (!body) {
-        return { diags: bodyDiags };
+    const bodyResult = await getBody(section, file);
+    if (!bodyResult.value) {
+        return bodyResult;
     }
 
+    const { value: { body } } = bodyResult;
     const results = await processXmls(body.children, {
         filePath: section.filePath,
-        imageResolver: file.imageResolver,
+        imageResolver: file.itemResolver,
     });
 
     return {
         value: results.map(r => r.value),
-        diags: [...bodyDiags ?? [], ...flatten(results.map(r => r.diags ?? []))],
+        diags: [...bodyResult.diags ?? [], ...flatten(results.map(r => r.diags ?? []))],
     };
 }
 
-async function getBody(section: EpubSection) {
+async function getBody(section: EpubSection, file: EpubFile) {
     const { value: document, diags } = xmlStringParser({
         xmlString: section.content,
         removeTrailingWhitespaces: false,
@@ -75,6 +77,15 @@ async function getBody(section: EpubSection) {
             }],
         };
     }
+
+    let styles: Stylesheet[] = [];
+    const head = html.children
+        .find(n => n.name === 'head');
+    if (head?.name !== undefined) {
+        const cssResult = await loadCss(head, file.itemResolver);
+        styles = cssResult.value ?? [];
+        diags?.push(...cssResult.diags ?? []);
+    }
     const body = html.children
         .find(n => n.name === 'body');
     if (body === undefined || body.type !== 'element') {
@@ -87,5 +98,39 @@ async function getBody(section: EpubSection) {
         };
     }
 
-    return { value: body };
+    return { value: { body, styles } };
+}
+
+async function loadCss(head: XmlElement, itemResolver: (id: string) => Promise<Buffer | undefined>) {
+    const results: Stylesheet[] = [];
+    const diags: Diagnostic[] = [];
+    for (const el of head.children) {
+        if (el.name === 'link' && el.attributes.rel === 'stylesheet') {
+            if (el.attributes.href === undefined) {
+                diags.push({
+                    diag: 'missing href on link',
+                    data: el,
+                });
+            } else {
+                const buffer = await itemResolver(el.attributes.href);
+                if (buffer === undefined) {
+                    diags.push({
+                        diag: `couldn't load css: ${el.attributes.href}`,
+                    });
+                } else {
+                    const content = buffer.toString('utf8');
+                    const result = parseCss(content);
+                    if (result.value) {
+                        results.push(result.value);
+                    }
+                    diags.push(...result.diags ?? []);
+                }
+            }
+        }
+    }
+
+    return {
+        value: results,
+        diags,
+    };
 }
