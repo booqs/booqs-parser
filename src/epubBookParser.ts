@@ -5,28 +5,29 @@ import { xmlStringParser, xml2string, XmlElement } from './xmlTree';
 import { epubFileParser, EpubSection, EpubFile } from './epubFileParser';
 import { processXmls } from './node';
 import { parseCss, Stylesheet, StyleRule } from './css';
-import { Result, genAsyncResult } from './result';
+import { Result, Diagnostic } from './result';
 
 export async function parseEpub({ filePath }: {
     filePath: string,
 }): Promise<Result<Booq>> {
-    return genAsyncResult(async function* () {
-        const { value: epub, diags } = await epubFileParser({ filePath });
-        yield* diags;
-        if (!epub) {
-            return;
-        }
+    const diags: Diagnostic[] = [];
+    const { value: epub, diags: fileDiags } = await epubFileParser({ filePath });
+    diags.push(...fileDiags);
+    if (!epub) {
+        return { diags };
+    }
 
-        const nodes: BooqNode[] = [];
-        for await (const section of epub.sections()) {
-            const result = await parseSection(section, epub);
-            if (result.value) {
-                nodes.push(...result.value);
-            }
-            yield* result.diags;
+    const nodes: BooqNode[] = [];
+    for await (const section of epub.sections()) {
+        const { value, diags: sectionDiags } = await parseSection(section, epub);
+        if (value) {
+            nodes.push(...value);
         }
+        diags.push(...sectionDiags);
+    }
 
-        return {
+    return {
+        value: {
             nodes,
             meta: {},
             toc: {
@@ -35,100 +36,104 @@ export async function parseEpub({ filePath }: {
                 length: 0,
             },
             images: {},
-        };
-    });
+        },
+        diags,
+    };
 }
 
 async function parseSection(section: EpubSection, file: EpubFile): Promise<Result<BooqNode[]>> {
-    return genAsyncResult(async function* () {
-        const { value: bodyResult, diags: bodyDiags } = await getBody(section, file);
-        yield* bodyDiags;
-        if (!bodyResult) {
-            return;
-        }
+    const diags: Diagnostic[] = [];
+    const { value: bodyResult, diags: bodyDiags } = await getBody(section, file);
+    diags.push(...bodyDiags);
+    if (!bodyResult) {
+        return { diags };
+    }
 
-        const { body, stylesheet } = bodyResult;
-        const results = await processXmls(body.children, {
-            filePath: section.filePath,
-            imageResolver: file.itemResolver,
-            stylesheet,
-        });
-        for (const r of results) {
-            yield* r.diags;
-        }
-        return results.map(r => r.value);
+    const { body, stylesheet } = bodyResult;
+    const nodes = await processXmls(body.children, {
+        filePath: section.filePath,
+        stylesheet,
+        report: diag => diags.push(diag),
     });
+    return {
+        value: nodes,
+        diags,
+    };
 }
 
 async function getBody(section: EpubSection, file: EpubFile) {
-    return genAsyncResult(async function* () {
-        const { value: document, diags: xmlDiags } = xmlStringParser({
-            xmlString: section.content,
-            removeTrailingWhitespaces: false,
-        });
-        yield* xmlDiags;
-        if (!document) {
-            return;
-        }
-        const html = document.children
-            .find(n => n.name === 'html');
-        if (html === undefined || html.type !== 'element') {
-            yield {
-                diag: 'no-html',
-                data: { xml: xml2string(document) },
-            };
-            return;
-        }
-
-        let stylesheet: Stylesheet = { rules: [] };
-        const head = html.children
-            .find(n => n.name === 'head');
-        if (head?.name !== undefined) {
-            const cssResult = await loadCss(head, file.itemResolver);
-            yield* cssResult.diags;
-            stylesheet = cssResult.value ?? stylesheet;
-        }
-        const body = html.children
-            .find(n => n.name === 'body');
-        if (body === undefined || body.type !== 'element') {
-            yield {
-                diag: 'no-body',
-                data: { xml: xml2string(html) },
-            };
-            return;
-        }
-
-        return { body, stylesheet };
+    const diags: Diagnostic[] = [];
+    const { value: document, diags: xmlDiags } = xmlStringParser({
+        xmlString: section.content,
+        removeTrailingWhitespaces: false,
     });
+    diags.push(...xmlDiags);
+    if (!document) {
+        return { diags };
+    }
+    const html = document.children
+        .find(n => n.name === 'html');
+    if (html === undefined || html.type !== 'element') {
+        diags.push({
+            diag: 'no-html',
+            data: { xml: xml2string(document) },
+        });
+        return { diags };
+    }
+
+    let stylesheet: Stylesheet = { rules: [] };
+    const head = html.children
+        .find(n => n.name === 'head');
+    if (head?.name !== undefined) {
+        const { value: loaded, diags: cssDiags } = await loadCss(head, file.itemResolver);
+        diags.push(...cssDiags);
+        stylesheet = loaded ?? stylesheet;
+    }
+    const body = html.children
+        .find(n => n.name === 'body');
+    if (body === undefined || body.type !== 'element') {
+        diags.push({
+            diag: 'no-body',
+            data: { xml: xml2string(html) },
+        });
+        return { diags };
+    }
+
+    return {
+        value: { body, stylesheet },
+        diags,
+    };
 }
 
 async function loadCss(head: XmlElement, itemResolver: (id: string) => Promise<Buffer | undefined>) {
-    return genAsyncResult(async function* () {
-        const rules: StyleRule[] = [];
-        for (const el of head.children) {
-            if (el.name === 'link' && el.attributes.rel === 'stylesheet') {
-                if (el.attributes.href === undefined) {
-                    yield {
-                        diag: 'missing href on link',
-                        data: el,
-                    };
+    const diags: Diagnostic[] = [];
+    const rules: StyleRule[] = [];
+    for (const el of head.children) {
+        if (el.name === 'link' && el.attributes.rel === 'stylesheet') {
+            if (el.attributes.href === undefined) {
+                diags.push({
+                    diag: 'missing href on link',
+                    data: el,
+                });
+            } else {
+                const buffer = await itemResolver(el.attributes.href);
+                if (buffer === undefined) {
+                    diags.push({
+                        diag: `couldn't load css: ${el.attributes.href}`,
+                    });
                 } else {
-                    const buffer = await itemResolver(el.attributes.href);
-                    if (buffer === undefined) {
-                        yield {
-                            diag: `couldn't load css: ${el.attributes.href}`,
-                        };
-                    } else {
-                        const content = buffer.toString('utf8');
-                        const result = parseCss(content);
-                        if (result.value) {
-                            rules.push(...result.value.rules);
-                        }
-                        yield* result.diags;
+                    const content = buffer.toString('utf8');
+                    const result = parseCss(content);
+                    if (result.value) {
+                        rules.push(...result.value.rules);
                     }
+                    diags.push(...result.diags);
                 }
             }
         }
-        return { rules };
-    });
+    }
+    return {
+        value: { rules },
+        diags,
+    };
 }

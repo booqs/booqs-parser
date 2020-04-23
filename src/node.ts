@@ -1,13 +1,13 @@
 import { BooqNode, BooqNodeStyle, flatten } from 'booqs-core';
 import { Xml, XmlElement, xml2string } from './xmlTree';
-import { Success } from './result';
+import { Diagnostic } from './result';
 import { Stylesheet } from './css';
 import { selectXml } from './selectors';
 
 type Env = {
     filePath: string,
-    imageResolver: (src: string) => Promise<Buffer | undefined>,
     stylesheet: Stylesheet,
+    report: (diag: Diagnostic) => void,
 };
 export async function processXmls(xmls: Xml[], env: Env) {
     return Promise.all(
@@ -15,29 +15,24 @@ export async function processXmls(xmls: Xml[], env: Env) {
     );
 }
 
-async function processXml(xml: Xml, env: Env): Promise<Success<BooqNode>> {
+async function processXml(xml: Xml, env: Env): Promise<BooqNode> {
     switch (xml.type) {
         case 'text':
             return {
-                value: {
-                    content: xml.text,
-                },
-                diags: [],
+                content: xml.text,
             };
         case 'element':
             return processXmlElement(xml, env);
         default:
-            return {
-                value: {},
-                diags: [{
-                    diag: 'unexpected node',
-                    data: { xml: xml2string(xml) },
-                }],
-            };
+            env.report({
+                diag: 'unexpected node',
+                data: { xml: xml2string(xml) },
+            });
+            return {};
     }
 }
 
-async function processXmlElement(element: XmlElement, env: Env): Promise<Success<BooqNode>> {
+async function processXmlElement(element: XmlElement, env: Env): Promise<BooqNode> {
     const result: BooqNode = {};
     const { id, class: _, ...rest } = element.attributes;
     if (id !== undefined) {
@@ -52,9 +47,32 @@ async function processXmlElement(element: XmlElement, env: Env): Promise<Success
     }
     if (element.children) {
         const children = await processXmls(element.children, env);
-        result.children = children.map(ch => ch.value);
+        result.children = children;
     }
-    return { value: result, diags: [] };
+    return result;
+}
+
+function fullId(id: string, filePath: string) {
+    return `${filePath}/${id}`;
+}
+
+function getStyle(xml: Xml, env: Env) {
+    const rules = getRules(xml, env);
+    const declarations = flatten(rules.map(r => r.content));
+    if (declarations.length === 0) {
+        return undefined;
+    }
+    const style: BooqNodeStyle = {};
+    for (const decl of declarations) {
+        style[decl.property] = decl.value;
+    }
+    return style;
+}
+
+function getRules(xml: Xml, env: Env) {
+    return env.stylesheet.rules.filter(
+        rule => selectXml(xml, rule.selector),
+    );
 }
 
 // async function processImgXmlElement(element: XmlElement, env: Env): Promise<Success<BooqNode>> {
@@ -115,26 +133,3 @@ async function processXmlElement(element: XmlElement, env: Env): Promise<Success
 //         };
 //     }
 // }
-
-function fullId(id: string, filePath: string) {
-    return `${filePath}/${id}`;
-}
-
-function getStyle(xml: Xml, env: Env) {
-    const rules = getRules(xml, env);
-    const declarations = flatten(rules.map(r => r.content));
-    if (declarations.length === 0) {
-        return undefined;
-    }
-    const style: BooqNodeStyle = {};
-    for (const decl of declarations) {
-        style[decl.property] = decl.value;
-    }
-    return style;
-}
-
-function getRules(xml: Xml, env: Env) {
-    return env.stylesheet.rules.filter(
-        rule => selectXml(xml, rule.selector),
-    );
-}
