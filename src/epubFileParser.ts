@@ -57,8 +57,8 @@ export async function epubFileParser({ filePath }: {
     } catch (e) {
         return {
             diags: [{
-                desc: 'exception on epub open',
-                exception: e,
+                diag: 'exception on epub open',
+                data: e,
             }],
         };
     }

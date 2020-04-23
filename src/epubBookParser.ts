@@ -1,8 +1,9 @@
 import {
-    BooqNode, Result, Diagnostic, Booq, mapNode,
+    BooqNode, Result, Diagnostic, Booq, flatten,
 } from 'booqs-core';
-import { xmlStringParser, XmlDocument, xml2string, Xml } from './xmlTree';
+import { xmlStringParser, xml2string } from './xmlTree';
 import { epubFileParser, EpubSection, EpubFile } from './epubFileParser';
+import { processXmls } from './node';
 
 export async function parseEpub({ filePath }: {
     filePath: string,
@@ -15,7 +16,7 @@ export async function parseEpub({ filePath }: {
     const nodes: BooqNode[] = [];
     const allDiags: Diagnostic[] = [];
     for await (const section of epub.sections()) {
-        const { value, diags } = parseSection(section, epub);
+        const { value, diags } = await parseSection(section, epub);
         if (value) {
             nodes.push(...value);
         }
@@ -38,7 +39,7 @@ export async function parseEpub({ filePath }: {
     };
 }
 
-function parseSection(section: EpubSection, file: EpubFile): Result<BooqNode[]> {
+async function parseSection(section: EpubSection, file: EpubFile): Promise<Result<BooqNode[]>> {
     const { value: document, diags } = xmlStringParser({
         xmlString: section.content,
         removeTrailingWhitespaces: false,
@@ -53,7 +54,7 @@ function parseSection(section: EpubSection, file: EpubFile): Result<BooqNode[]> 
             value: [],
             diags: [{
                 diag: 'no-html',
-                xml: xml2string(document),
+                data: { xml: xml2string(document) },
             }],
         };
     }
@@ -64,53 +65,18 @@ function parseSection(section: EpubSection, file: EpubFile): Result<BooqNode[]> 
             value: [],
             diags: [{
                 diag: 'no-body',
-                xml: xml2string(html),
+                data: { xml: xml2string(html) },
             }],
         };
     }
 
-    const nodes = xmls2nodes(body.children);
-    const resolved = nodes.map(
-        node => mapNode(node, n => resolveNode(n, section, file)),
-    );
+    const results = await processXmls(body.children, {
+        filePath: section.filePath,
+        imageResolver: file.imageResolver,
+    });
 
     return {
-        value: resolved,
+        value: results.map(r => r.value),
+        diags: flatten(results.map(r => r.diags ?? [])),
     };
-}
-
-function resolveNode(node: BooqNode, section: EpubSection, file: EpubFile): BooqNode {
-    if (node.attrs && node.attrs.id) {
-        return {
-            ...node,
-            id: `${section.filePath}/${node.attrs.id}`,
-        };
-    } else {
-        return node;
-    }
-}
-
-function xmls2nodes(xmls: Xml[]): BooqNode[] {
-    return xmls.map(xml2node);
-}
-
-function xml2node(xml: Xml): BooqNode {
-    switch (xml.type) {
-        case 'text':
-            return {
-                node: 'text',
-                content: xml.text,
-            };
-        case 'element':
-            return {
-                name: xml.name,
-                children: xmls2nodes(xml.children),
-                attrs: xml.attributes,
-            };
-        default:
-            return {
-                node: 'ignore',
-                comment: xml2string(xml),
-            };
-    }
 }

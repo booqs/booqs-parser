@@ -21,7 +21,7 @@ export function xmlStringParser(input: XmlStringParserInput): Result<XmlDocument
         }
         return { value: tree };
     } catch (e) {
-        return { diags: [{ diag: 'exception', e }] };
+        return { diags: [{ diag: 'exception', data: e }] };
     }
 }
 
