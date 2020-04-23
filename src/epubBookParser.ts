@@ -29,7 +29,7 @@ export async function parseEpub({ filePath }: {
     return {
         value: {
             nodes,
-            meta: {},
+            meta: epub.metadata,
             toc: {
                 title: undefined,
                 items: [],
