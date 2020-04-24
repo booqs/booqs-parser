@@ -52,7 +52,7 @@ export async function openEpub({ filePath }: {
                 if (!itemId) {
                     return undefined;
                 }
-                const buffer = await epub.getFileAsync(itemId);
+                const [buffer] = await epub.getFileAsync(itemId);
                 return buffer;
             },
             sections: async function* () {

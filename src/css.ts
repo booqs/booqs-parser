@@ -14,10 +14,21 @@ export type StyleRule = {
 export type Stylesheet = {
     rules: StyleRule[],
 };
-export function parseCss(css: string): Result<Stylesheet> {
-    const parsed = parse(css);
+export function parseCss(css: string, fileName: string): Result<Stylesheet> {
     const rules: StyleRule[] = [];
     const diags: Diagnostic[] = [];
+    const parsed = parse(css, {
+        silent: true,
+        source: fileName,
+    });
+    if (parsed.stylesheet?.parsingErrors?.length) {
+        diags.push({
+            diag: 'css parsing error',
+            data: {
+                errors: parsed.stylesheet.parsingErrors,
+            },
+        });
+    }
     const parsedRules = parsed.stylesheet?.rules.filter(
         (r): r is Rule => r.type === 'rule'
     ) ?? [];

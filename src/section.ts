@@ -94,7 +94,7 @@ async function loadCss(head: XmlElement, itemResolver: (id: string) => Promise<B
                     });
                 } else {
                     const content = buffer.toString('utf8');
-                    const result = parseCss(content);
+                    const result = parseCss(content, el.attributes.href);
                     if (result.value) {
                         rules.push(...result.value.rules);
                     }
