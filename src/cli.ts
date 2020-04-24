@@ -3,7 +3,7 @@
 import { existsSync, lstat, readdir, writeFile } from 'fs';
 import { extname, join, dirname, basename } from 'path';
 import { promisify, inspect } from 'util';
-import { Booq } from 'booqs-core';
+import { Booq, flatten } from 'booqs-core';
 import { parseEpub } from './index';
 
 exec();
@@ -62,11 +62,15 @@ async function processEpubFile(filePath: string, verbosity: number = 0) {
     return diags;
 }
 
-async function listFiles(path: string) {
+async function listFiles(path: string): Promise<string[]> {
     const isDirectory = (await promisify(lstat)(path)).isDirectory();
     if (isDirectory) {
         const files = await promisify(readdir)(path);
-        return files.map(f => join(path, f));
+        return flatten(
+            await Promise.all(
+                files.map(f => listFiles(join(path, f))),
+            ),
+        );
     } else {
         return [path];
     }
