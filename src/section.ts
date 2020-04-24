@@ -106,32 +106,8 @@ async function processHead(head: XmlElement, env: Env) {
     for (const ch of head.children) {
         switch (ch.name) {
             case 'link': {
-                if (ch.attributes.rel?.toLowerCase() !== 'stylesheet') {
-                    env.report({
-                        diag: `unexpected link rel: ${ch.attributes.rel}`,
-                        data: { xml: xml2string(ch) },
-                    });
-                    break;
-                }
-                if (ch.attributes.href === undefined) {
-                    env.report({
-                        diag: 'missing href on link',
-                        data: { xml: xml2string(ch) },
-                    });
-                    break;
-                }
-                const content = await env.resolveTextFile(ch.attributes.href);
-                if (content === undefined) {
-                    env.report({
-                        diag: `couldn't load css: ${ch.attributes.href}`,
-                    });
-                } else {
-                    const { value, diags } = parseCss(content, ch.attributes.href);
-                    if (value) {
-                        rules.push(...value.rules);
-                    }
-                    diags.forEach(d => env.report(d));
-                }
+                const fromLink = await processLink(ch, env);
+                rules.push(...fromLink);
                 break;
             }
             case 'title':
@@ -148,6 +124,51 @@ async function processHead(head: XmlElement, env: Env) {
         }
     }
     return { rules };
+}
+
+async function processLink(link: XmlElement, env: Env) {
+    const { rel, href, type } = link.attributes;
+    switch (rel?.toLowerCase()) {
+        case 'stylesheet':
+            break;
+        default:
+            env.report({
+                diag: `unexpected link rel: ${rel}`,
+                data: { xml: xml2string(link) },
+            });
+            return [];
+    }
+    switch (type?.toLowerCase()) {
+        case 'text/css':
+            break;
+        // Note: known unsupported
+        case 'application/vnd.adobe-page-template+xml':
+            return [];
+        // Note: unknown unsupported
+        default:
+            env.report({
+                diag: `unexpected link type: ${type}`,
+            });
+            return [];
+    }
+    if (href === undefined) {
+        env.report({
+            diag: 'missing href on link',
+            data: { xml: xml2string(link) },
+        });
+        return [];
+    }
+    const content = await env.resolveTextFile(href);
+    if (content === undefined) {
+        env.report({
+            diag: `couldn't load css: ${href}`,
+        });
+        return [];
+    } else {
+        const { value, diags } = parseCss(content, href);
+        diags.forEach(d => env.report(d));
+        return value?.rules ?? [];
+    }
 }
 
 async function processBody(body: XmlElement, env: Env) {
