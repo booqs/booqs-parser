@@ -38,7 +38,7 @@ async function processSectionContent(content: string, env: Env) {
         xmlString: content,
         removeTrailingWhitespaces: false,
     });
-    diags.forEach(env.report);
+    diags.forEach(d => env.report(d));
     return value && processDocument(value, env);
 }
 
@@ -130,7 +130,7 @@ async function processHead(head: XmlElement, env: Env) {
                     if (value) {
                         rules.push(...value.rules);
                     }
-                    diags.forEach(env.report);
+                    diags.forEach(d => env.report(d));
                 }
                 break;
             }
