@@ -22,16 +22,16 @@ export function parseCss(css: string, fileName: string): Result<Stylesheet> {
         silent: true,
         source: fileName,
     });
-    // if (parsed.stylesheet?.parsingErrors?.length) {
-    //     diags.push({
-    //         diag: 'css parsing error',
-    //         data: {
-    //             errors: parsed.stylesheet.parsingErrors.map(
-    //                 e => ({ ...e, message: undefined }),
-    //             ),
-    //         },
-    //     });
-    // }
+    if (parsed.stylesheet?.parsingErrors?.length) {
+        diags.push({
+            diag: 'css parsing error',
+            data: {
+                errors: parsed.stylesheet.parsingErrors.map(
+                    e => ({ ...e, message: undefined }),
+                ),
+            },
+        });
+    }
     const parsedRules = parsed.stylesheet?.rules ?? [];
     const { value: rules, diags: rulesDiags } = processRules(parsedRules);
     diags.push(...rulesDiags);
