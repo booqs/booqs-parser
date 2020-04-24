@@ -44,6 +44,9 @@ async function processXmlElement(element: XmlElement, env: Env): Promise<BooqNod
     }
     if (Object.keys(rest).length > 0) {
         result.attrs = rest;
+        if (result.attrs.href) {
+            result.attrs.href = fixHref(result.attrs.href);
+        }
     }
     if (element.children) {
         const children = await processXmls(element.children, env);
@@ -54,6 +57,10 @@ async function processXmlElement(element: XmlElement, env: Env): Promise<BooqNod
 
 function fullId(id: string, filePath: string) {
     return `${filePath}/${id}`;
+}
+
+function fixHref(href: string) {
+    return href.replace('#', '/');
 }
 
 function getStyle(xml: Xml, env: Env) {
@@ -74,62 +81,3 @@ function getRules(xml: Xml, env: Env) {
         rule => selectXml(xml, rule.selector),
     );
 }
-
-// async function processImgXmlElement(element: XmlElement, env: Env): Promise<Success<BooqNode>> {
-//     const { src } = element.attributes;
-//     if (!src) {
-//         return {
-//             value: {
-//                 name: 'img',
-//                 ...buildNodeFields(element, env),
-//             },
-//             diags: [{
-//                 diag: 'empty src',
-//                 data: { xml: xml2string(element) },
-//             }],
-//         };
-//     } else if (src.match(/\.png|jpg|jpeg|gif$/)) {
-//         const buffer = await env.imageResolver(src);
-//         if (buffer) {
-//             return {
-//                 value: {
-//                     node: 'image',
-//                     image: {
-//                         image: 'base64',
-//                         base64: Buffer.from(buffer).toString('base64'),
-//                     },
-//                     ...buildNodeFields(element, env),
-//                 },
-//                 diags: [],
-//             };
-//         } else {
-//             return {
-//                 value: { node: 'ignore' },
-//                 diags: [{
-//                     diag: `Couldn't load image: ${src}`,
-//                 }],
-//             };
-//         }
-//     } else if (src.match(/^www\.[^.]+\.com/)) {
-//         return {
-//             value: {
-//                 name: 'img',
-//                 ...buildNodeFields(element, env),
-//             },
-//             diags: [{
-//                 diag: 'external image',
-//             }],
-//         };
-//     } else {
-//         return {
-//             value: {
-//                 name: 'img',
-//                 ...buildNodeFields(element, env),
-//             },
-//             diags: [{
-//                 diag: 'unsupported image',
-//                 data: { src },
-//             }],
-//         };
-//     }
-// }
