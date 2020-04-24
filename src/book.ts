@@ -5,6 +5,7 @@ import { EpubFile } from './epubFile';
 import { Result, Diagnostic } from './result';
 import { parseSection } from './section';
 import { buildImages } from './images';
+import { buildToc } from './toc';
 
 export async function processEpub(epub: EpubFile): Promise<Result<Booq>> {
     const diags: Diagnostic[] = [];
@@ -21,11 +22,14 @@ export async function processEpub(epub: EpubFile): Promise<Result<Booq>> {
     const { value: images, diags: imagesDiags } = await buildImages(nodes, epub);
     diags.push(...imagesDiags);
 
+    const { value: toc, diags: tocDiags } = await buildToc(nodes, epub);
+    diags.push(...tocDiags);
+
     return {
         value: {
             nodes,
             meta: epub.metadata,
-            toc: {
+            toc: toc ?? {
                 title: undefined,
                 items: [],
                 length: 0,

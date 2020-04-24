@@ -9,12 +9,18 @@ export type EpubSection = {
 export type EpubMetadata = {
     [key: string]: string | string[] | undefined,
 };
+export type EpubTocItem = {
+    level: number | undefined,
+    title: string | undefined,
+    href: string | undefined,
+};
 export type EpubFile = {
     rawMetadata: any,
     metadata: EpubMetadata,
     itemResolver(id: string): Promise<Buffer | undefined>,
     imageResolver(id: string): Promise<Buffer | undefined>,
     sections(): AsyncGenerator<EpubSection>,
+    toc(): Generator<EpubTocItem>,
 };
 
 export async function openEpub({ filePath }: {
@@ -62,6 +68,15 @@ export async function openEpub({ filePath }: {
                         };
                         yield section;
                     }
+                }
+            },
+            toc: function* () {
+                for (const el of epub.toc) {
+                    yield {
+                        level: el.level,
+                        title: el.title,
+                        href: el.href,
+                    };
                 }
             },
         };
