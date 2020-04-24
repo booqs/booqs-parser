@@ -4,6 +4,9 @@
   "description": "Booqs parser",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "pbq": "dist/cli.js"
+  },
   "scripts": {
     "prepare": "npm run build",
     "lint": "eslint src/**/*",
