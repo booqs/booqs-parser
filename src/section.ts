@@ -1,47 +1,11 @@
-import {
-    BooqNode, Booq,
-} from 'booqs-core';
+import { BooqNode } from 'booqs-core';
 import { xmlStringParser, xml2string, XmlElement } from './xmlTree';
-import { epubFileParser, EpubSection, EpubFile } from './epubFileParser';
+import { EpubSection, EpubFile } from './epubFile';
 import { processXmls } from './node';
 import { parseCss, Stylesheet, StyleRule } from './css';
 import { Result, Diagnostic } from './result';
 
-export async function parseEpub({ filePath }: {
-    filePath: string,
-}): Promise<Result<Booq>> {
-    const diags: Diagnostic[] = [];
-    const { value: epub, diags: fileDiags } = await epubFileParser({ filePath });
-    diags.push(...fileDiags);
-    if (!epub) {
-        return { diags };
-    }
-
-    const nodes: BooqNode[] = [];
-    for await (const section of epub.sections()) {
-        const { value, diags: sectionDiags } = await parseSection(section, epub);
-        if (value) {
-            nodes.push(...value);
-        }
-        diags.push(...sectionDiags);
-    }
-
-    return {
-        value: {
-            nodes,
-            meta: epub.metadata,
-            toc: {
-                title: undefined,
-                items: [],
-                length: 0,
-            },
-            images: {},
-        },
-        diags,
-    };
-}
-
-async function parseSection(section: EpubSection, file: EpubFile): Promise<Result<BooqNode[]>> {
+export async function parseSection(section: EpubSection, file: EpubFile): Promise<Result<BooqNode[]>> {
     const diags: Diagnostic[] = [];
     const { value: bodyResult, diags: bodyDiags } = await getBody(section, file);
     diags.push(...bodyDiags);

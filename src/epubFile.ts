@@ -17,7 +17,7 @@ export type EpubFile = {
     sections(): AsyncGenerator<EpubSection>,
 };
 
-export async function epubFileParser({ filePath }: {
+export async function openEpub({ filePath }: {
     filePath: string,
 }): Promise<Result<EpubFile>> {
     try {
