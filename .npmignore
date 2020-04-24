@@ -9,3 +9,6 @@ src/**/*
 .eslintrc.js
 tsconfig.json
 dist/tsconfig.tsbuildinfo
+
+# ignore epub examples
+examples/**/*
