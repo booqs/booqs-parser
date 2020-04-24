@@ -46,6 +46,20 @@ export function parseCss(css: string, fileName: string): Result<Stylesheet> {
     };
 }
 
+export function parseInlineStyle(style: string, fileName: string) {
+    // TODO: use '*' selector
+    const pseudoCss = `div {\n${style}\n}`;
+    const { value, diags } = parseCss(pseudoCss, fileName);
+    if (value) {
+        return {
+            value: value.rules,
+            diags,
+        };
+    } else {
+        return { diags };
+    }
+}
+
 function buildRule(rule: Rule): Result<StyleRule> {
     const { value, diags } = combineResults(rule.selectors?.map(parseSelector) ?? []);
     const selectors = filterUndefined(value ?? []);

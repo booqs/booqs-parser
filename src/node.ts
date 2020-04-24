@@ -1,7 +1,7 @@
 import { BooqNode, BooqNodeStyle, flatten } from 'booqs-core';
 import { Xml, XmlElement, xml2string } from './xmlTree';
 import { Diagnostic } from './result';
-import { Stylesheet } from './css';
+import { Stylesheet, parseInlineStyle } from './css';
 import { selectXml } from './selectors';
 
 type Env = {
@@ -47,12 +47,6 @@ async function processXmlElement(element: XmlElement, env: Env): Promise<BooqNod
         if (result.attrs.href) {
             result.attrs.href = fixHref(result.attrs.href);
         }
-        if (result.attrs.style) {
-            env.report({
-                diag: 'style attribute is set',
-                data: { xml: xml2string(element) },
-            });
-        }
     }
     if (element.children) {
         const children = await processXmls(element.children, env);
@@ -85,7 +79,16 @@ function getStyle(xml: Xml, env: Env) {
 }
 
 function getRules(xml: Xml, env: Env) {
-    return env.stylesheet.rules.filter(
+    const cssRules = env.stylesheet.rules.filter(
         rule => selectXml(xml, rule.selector),
     );
+    const inline = xml.attributes?.style;
+    if (inline) {
+        const { value, diags } = parseInlineStyle(inline, env.fileName);
+        diags.forEach(d => env.report(d));
+        const inlineRules = value ?? [];
+        return [...cssRules, ...inlineRules];
+    } else {
+        return cssRules;
+    }
 }
