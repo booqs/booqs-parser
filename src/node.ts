@@ -47,6 +47,12 @@ async function processXmlElement(element: XmlElement, env: Env): Promise<BooqNod
         if (result.attrs.href) {
             result.attrs.href = fixHref(result.attrs.href);
         }
+        if (result.attrs.style) {
+            env.report({
+                diag: 'style attribute is set',
+                data: { xml: xml2string(element) },
+            });
+        }
     }
     if (element.children) {
         const children = await processXmls(element.children, env);
