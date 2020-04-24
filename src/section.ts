@@ -131,6 +131,8 @@ async function processLink(link: XmlElement, env: Env) {
     switch (rel?.toLowerCase()) {
         case 'stylesheet':
             break;
+        case 'coverpage':
+            return [];
         default:
             env.report({
                 diag: `unexpected link rel: ${rel}`,
