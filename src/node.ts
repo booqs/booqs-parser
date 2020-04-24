@@ -5,7 +5,7 @@ import { Stylesheet } from './css';
 import { selectXml } from './selectors';
 
 type Env = {
-    filePath: string,
+    fileName: string,
     stylesheet: Stylesheet,
     report: (diag: Diagnostic) => void,
 };
@@ -36,7 +36,7 @@ async function processXmlElement(element: XmlElement, env: Env): Promise<BooqNod
     const result: BooqNode = {};
     const { id, class: _, ...rest } = element.attributes;
     if (id !== undefined) {
-        result.id = fullId(id, env.filePath);
+        result.id = fullId(id, env.fileName);
     }
     const style = getStyle(element, env);
     if (style) {
@@ -61,8 +61,8 @@ async function processXmlElement(element: XmlElement, env: Env): Promise<BooqNod
     return result;
 }
 
-function fullId(id: string, filePath: string) {
-    return `${filePath}/${id}`;
+function fullId(id: string, fileName: string) {
+    return `${fileName}/${id}`;
 }
 
 function fixHref(href: string) {

@@ -15,13 +15,20 @@ export async function parseSection(section: EpubSection, file: EpubFile): Promis
 
     const { body, stylesheet } = bodyResult;
     const nodes = await processXmls(body.children, {
-        filePath: section.filePath,
+        fileName: section.fileName,
         stylesheet,
         report: diag => diags.push(diag),
     });
+    const head = sectionNode(section);
     return {
-        value: nodes,
+        value: [head, ...nodes],
         diags,
+    };
+}
+
+function sectionNode(section: EpubSection): BooqNode {
+    return {
+        id: section.fullPath,
     };
 }
 

@@ -2,7 +2,8 @@ import { EPub } from 'epub2';
 import { Result } from './result';
 
 export type EpubSection = {
-    filePath: string,
+    fullPath: string,
+    fileName: string,
     id: string,
     content: string,
 };
@@ -59,11 +60,12 @@ export async function openEpub({ filePath }: {
                     if (el.id && el.href) {
                         // NOTE: couldn't find better solution
                         const comps = el.href.split('/');
-                        const href = comps[comps.length - 1];
+                        const fileName = comps[comps.length - 1];
                         const chapter = await epub.chapterForId(el.id);
                         const section: EpubSection = {
                             id: el.id,
-                            filePath: href,
+                            fileName,
+                            fullPath: el.href,
                             content: chapter,
                         };
                         yield section;

@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-// tslint:disable: no-console
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { existsSync, lstat, readdir, writeFile } from 'fs';
 import { extname, join, dirname, basename } from 'path';
 import { promisify, inspect } from 'util';
@@ -11,7 +11,7 @@ exec();
 async function exec() {
     const args = process.argv;
     const path = args[2];
-    const reportMeta = args[3] ? true : false;
+    const verbosity = args[3] ? parseInt(args[3], 10) : 1;
     if (!path) {
         console.log('You need to pass epub path as an arg');
         return;
@@ -26,7 +26,7 @@ async function exec() {
     console.log(epubs);
     logTimeAsync('parsing', async () => {
         for (const epubPath of epubs) {
-            await processEpubFile(epubPath, reportMeta ? 2 : 1);
+            await processEpubFile(epubPath, verbosity);
         }
     });
 }
@@ -44,7 +44,7 @@ async function processEpubFile(filePath: string, verbosity: number = 0) {
         console.log(`---- ${filePath}:`);
     }
     const pathToSave = join(dirname(filePath), `${basename(filePath, '.epub')}.booq`);
-    await saveBook(pathToSave, booq);
+    // await saveBook(pathToSave, booq);
     if (verbosity > 1) {
         console.log('Metadata:');
         console.log(booq.meta);
