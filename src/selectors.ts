@@ -1,4 +1,4 @@
-import { regex, project, Parser, choice, sequence } from './stringParser';
+import { regex, project, Parser, choice, sequence, oneOrMore } from './stringParser';
 import { Result } from './result';
 import { assertNever } from 'booqs-core';
 import { Xml } from './xmlTree';
@@ -27,13 +27,17 @@ type DescendantSelector = {
     ancestor: Selector,
     descendant: Selector,
 };
-type SomeOfSelector = {
-    selector: 'some',
+type OrSelector = {
+    selector: 'or',
+    selectors: Selector[],
+};
+type AndSelector = {
+    selector: 'and',
     selectors: Selector[],
 };
 
 type CompositeSelector =
-    | DescendantSelector | SomeOfSelector;
+    | DescendantSelector | OrSelector | AndSelector;
 
 export type Selector = SimpleSelector | CompositeSelector;
 
@@ -58,9 +62,12 @@ export function selectXml(xml: Xml, selector: Selector): boolean {
             }
             return false;
         }
-        case 'some':
+        case 'or':
             return selector.selectors
                 .some(sel => selectXml(xml, sel));
+        case 'and':
+            return selector.selectors
+                .every(sel => selectXml(xml, sel));
         default:
             assertNever(selector);
             return false;
@@ -120,17 +127,25 @@ const idSel: SelectorParser = project(
         id,
     }),
 );
-const simpleSel = choice(
+const atomSel = choice(
     universalSel, elementSel, classSel, idSel,
 );
 
+const andSel: SelectorParser = project(
+    oneOrMore(atomSel),
+    selectors => ({
+        selector: 'and',
+        selectors,
+    }),
+);
+
 const descendantSel: SelectorParser = project(
-    sequence(simpleSel, regex(/ /), simpleSel),
+    sequence(andSel, regex(/ /), andSel),
     ([ancestor, , descendant]) => ({
         selector: 'descendant',
         ancestor, descendant,
     }),
 );
-const compositeSel = choice(descendantSel);
+const compositeSel = choice(descendantSel, andSel);
 
-const selectorParser = choice(compositeSel, simpleSel);
+const selectorParser = compositeSel;

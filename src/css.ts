@@ -72,7 +72,7 @@ function buildRule(rule: Rule): Result<StyleRule> {
     return {
         value: {
             selector: {
-                selector: 'some',
+                selector: 'or',
                 selectors,
             },
             content: (rule.declarations ?? [])

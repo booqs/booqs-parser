@@ -57,6 +57,34 @@ export function choice<T>(...ps: Array<Parser<T>>): Parser<T> {
     };
 }
 
+export function oneOrMore<T>(parser: Parser<T>): Parser<T[]> {
+    return input => {
+        const results: T[] = [];
+        let curr = parser(input);
+        while (curr.success) {
+            results.push(curr.value);
+            input = curr.next;
+            curr = parser(input);
+        }
+        return results.length > 0
+            ? { success: true, value: results, next: input }
+            : { success: false };
+    };
+}
+
+export function zeroOrMore<T>(parser: Parser<T>): Parser<T[]> {
+    return input => {
+        const results: T[] = [];
+        let curr = parser(input);
+        while (curr.success) {
+            results.push(curr.value);
+            input = curr.next;
+            curr = parser(input);
+        }
+        return { success: true, value: results, next: input };
+    };
+}
+
 export function project<T, U>(p: Parser<T>, proj: (t: T) => U): Parser<U> {
     return input => {
         const result = p(input);
