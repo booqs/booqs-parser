@@ -110,6 +110,11 @@ async function processHead(head: XmlElement, env: Env) {
                 rules.push(...fromLink);
                 break;
             }
+            case 'style': {
+                const fromStyle = await processStyle(ch, env);
+                rules.push(...fromStyle);
+                break;
+            }
             case 'title':
             case 'meta':
                 // TODO: handle ?
@@ -171,6 +176,20 @@ async function processLink(link: XmlElement, env: Env) {
         diags.forEach(d => env.report(d));
         return value?.rules ?? [];
     }
+}
+
+async function processStyle(style: XmlElement, env: Env) {
+    const content = style.children[0];
+    if (style.attributes.type !== 'text/css' || style.children.length !== 1 || content.type !== 'text') {
+        env.report({
+            diag: 'unsupported style tag',
+            data: { xml: xml2string(style) },
+        });
+        return [];
+    }
+    const { value, diags } = parseCss(content.text, `${env.fileName}: <style>`);
+    diags.forEach(d => env.report(d));
+    return value?.rules ?? [];
 }
 
 async function processBody(body: XmlElement, env: Env) {
@@ -260,7 +279,7 @@ function getRules(xml: Xml, env: Env) {
     );
     const inline = xml.attributes?.style;
     if (inline) {
-        const { value, diags } = parseInlineStyle(inline, env.fileName);
+        const { value, diags } = parseInlineStyle(inline, `${env.fileName}: <${xml.name} style>`);
         diags.forEach(d => env.report(d));
         const inlineRules = value ?? [];
         return [...cssRules, ...inlineRules];

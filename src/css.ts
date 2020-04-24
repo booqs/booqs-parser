@@ -25,7 +25,9 @@ export function parseCss(css: string, fileName: string): Result<Stylesheet> {
         diags.push({
             diag: 'css parsing error',
             data: {
-                errors: parsed.stylesheet.parsingErrors,
+                errors: parsed.stylesheet.parsingErrors.map(
+                    e => ({ ...e, message: undefined }),
+                ),
             },
         });
     }
