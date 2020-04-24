@@ -2,7 +2,6 @@ import { EPub } from 'epub2';
 import { Result } from './result';
 
 export type EpubSection = {
-    fullPath: string,
     fileName: string,
     id: string,
     content: string,
@@ -36,6 +35,12 @@ export async function openEpub({ filePath }: {
                 .find(item => item.href && item.href.endsWith(href));
             return idItem?.id;
         }
+        function getFileName(href: string) {
+            // NOTE: couldn't find better solution
+            const comps = href.split('/');
+            const fileName = comps[comps.length - 1];
+            return fileName;
+        }
         const book: EpubFile = {
             rawMetadata: getRawData(epub.metadata),
             metadata: extractMetadata(epub),
@@ -58,14 +63,10 @@ export async function openEpub({ filePath }: {
             sections: async function* () {
                 for (const el of epub.flow) {
                     if (el.id && el.href) {
-                        // NOTE: couldn't find better solution
-                        const comps = el.href.split('/');
-                        const fileName = comps[comps.length - 1];
                         const chapter = await epub.chapterForId(el.id);
                         const section: EpubSection = {
                             id: el.id,
-                            fileName,
-                            fullPath: el.href,
+                            fileName: getFileName(el.href),
                             content: chapter,
                         };
                         yield section;
@@ -77,7 +78,7 @@ export async function openEpub({ filePath }: {
                     yield {
                         level: el.level,
                         title: el.title,
-                        href: el.href,
+                        href: el.href && getFileName(el.href),
                     };
                 }
             },

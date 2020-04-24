@@ -62,11 +62,13 @@ async function processXmlElement(element: XmlElement, env: Env): Promise<BooqNod
 }
 
 function fullId(id: string, fileName: string) {
-    return `${fileName}/${id}`;
+    // return `${fileName}/${id}`;
+    return `${fileName}#${id}`;
 }
 
 function fixHref(href: string) {
-    return href.replace('#', '/');
+    // return href.replace('#', '/');
+    return href;
 }
 
 function getStyle(xml: Xml, env: Env) {

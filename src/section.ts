@@ -28,7 +28,7 @@ export async function parseSection(section: EpubSection, file: EpubFile): Promis
 
 function sectionNode(section: EpubSection): BooqNode {
     return {
-        id: section.fullPath,
+        id: section.fileName,
     };
 }
 
