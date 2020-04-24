@@ -4,6 +4,9 @@
   "description": "Booqs parser",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "pbq": "dist/cli.js"
+  },
   "scripts": {
     "prepare": "npm run build",
     "lint": "eslint src/**/*",
@@ -24,6 +27,8 @@
   },
   "homepage": "https://github.com/booqs/booqs-parser",
   "devDependencies": {
+    "@types/css": "0.0.31",
+    "@types/node": "^13.13.2",
     "@typescript-eslint/eslint-plugin": "^2.29.0",
     "@typescript-eslint/parser": "^2.29.0",
     "eslint": "^6.8.0",
@@ -33,5 +38,11 @@
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
     "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "@rgrove/parse-xml": "^2.0.3",
+    "booqs-core": "^0.2.0",
+    "css": "^2.2.4",
+    "epub2": "^1.3.8"
   }
 }
