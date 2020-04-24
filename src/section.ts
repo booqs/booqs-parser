@@ -229,7 +229,7 @@ async function processBodyXml(xml: Xml, env: Env): Promise<BooqNode> {
 
 async function processXmlElement(element: XmlElement, env: Env): Promise<BooqNode> {
     const result: BooqNode = {};
-    const { id, class: _, ...rest } = element.attributes;
+    const { id, class: _, style: __, ...rest } = element.attributes;
     if (id !== undefined) {
         result.id = fullId(id, env.fileName);
     }

@@ -3,6 +3,9 @@ import { Result } from './result';
 import { assertNever } from 'booqs-core';
 import { Xml } from './xmlTree';
 
+type UniversalSelector = {
+    selector: 'universal',
+};
 type ElementSelector = {
     selector: 'element',
     name: string,
@@ -17,7 +20,7 @@ type IdSelector = {
 }
 
 type SimpleSelector =
-    | ElementSelector | ClassSelector | IdSelector;
+    | UniversalSelector | ElementSelector | ClassSelector | IdSelector;
 
 type DescendantSelector = {
     selector: 'descendant',
@@ -36,6 +39,8 @@ export type Selector = SimpleSelector | CompositeSelector;
 
 export function selectXml(xml: Xml, selector: Selector): boolean {
     switch (selector.selector) {
+        case 'universal':
+            return true;
         case 'class':
             return hasClass(xml, selector.class);
         case 'id':
@@ -90,6 +95,10 @@ export function parseSelector(sel: string): Result<Selector> {
 }
 
 type SelectorParser = Parser<Selector>;
+const universalSel: SelectorParser = project(
+    regex(/\*/),
+    () => ({ selector: 'universal' }),
+);
 const elementSel: SelectorParser = project(
     regex(/[a-z]+/),
     name => ({
@@ -111,7 +120,9 @@ const idSel: SelectorParser = project(
         id,
     }),
 );
-const simpleSel = choice(elementSel, classSel, idSel);
+const simpleSel = choice(
+    universalSel, elementSel, classSel, idSel,
+);
 
 const descendantSel: SelectorParser = project(
     sequence(simpleSel, regex(/ /), simpleSel),
