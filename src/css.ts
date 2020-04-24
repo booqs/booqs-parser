@@ -1,4 +1,6 @@
-import { parse, Rule, Declaration } from 'css';
+import {
+    parse, Rule, Declaration, Charset, Media, AtRule, Comment,
+} from 'css';
 import { Result, combineResults, Diagnostic } from './result';
 import { Selector, parseSelector } from './selectors';
 import { filterUndefined } from 'booqs-core';
@@ -15,7 +17,6 @@ export type Stylesheet = {
     rules: StyleRule[],
 };
 export function parseCss(css: string, fileName: string): Result<Stylesheet> {
-    const rules: StyleRule[] = [];
     const diags: Diagnostic[] = [];
     const parsed = parse(css, {
         silent: true,
@@ -31,19 +32,64 @@ export function parseCss(css: string, fileName: string): Result<Stylesheet> {
     //         },
     //     });
     // }
-    const parsedRules = parsed.stylesheet?.rules.filter(
-        (r): r is Rule => r.type === 'rule'
-    ) ?? [];
+    const parsedRules = parsed.stylesheet?.rules ?? [];
+    const { value: rules, diags: rulesDiags } = processRules(parsedRules);
+    diags.push(...rulesDiags);
+
+    return {
+        value: { rules },
+        diags,
+    };
+}
+
+function processRules(parsedRules: Array<Rule | Comment | AtRule>) {
+    const rules: StyleRule[] = [];
+    const diags: Diagnostic[] = [];
     for (const parsedRule of parsedRules) {
-        const { value, diags: ruleDiags } = buildRule(parsedRule);
-        diags.push(...ruleDiags);
-        if (value) {
-            rules.push(value);
+        switch (parsedRule.type) {
+            case 'comment':
+            case 'font-face':
+                break;
+            case 'charset': {
+                const charset = (parsedRule as Charset).charset;
+                if (charset !== '"utf-8"') {
+                    diags.push({
+                        diag: `unsupported charset: ${charset}`,
+                    });
+                }
+                break;
+            }
+            case 'media': {
+                const mediaRule = parsedRule as Media;
+                if (mediaRule.media !== 'all') {
+                    diags.push({
+                        diag: `unsupported media rule: ${mediaRule.media}`,
+                    });
+                    break;
+                }
+                const fromMedia = processRules(mediaRule.rules ?? []);
+                rules.push(...fromMedia.value);
+                diags.push(...fromMedia.diags);
+                break;
+            }
+            case 'rule': {
+                const { value, diags: ruleDiags } = buildRule(parsedRule);
+                diags.push(...ruleDiags);
+                if (value) {
+                    rules.push(value);
+                }
+                break;
+            }
+            default:
+                diags.push({
+                    diag: `unsupported css rule: ${parsedRule.type}`,
+                });
+                break;
         }
     }
 
     return {
-        value: { rules },
+        value: rules,
         diags,
     };
 }
