@@ -32,7 +32,7 @@ async function exec() {
 }
 
 async function processEpubFile(filePath: string, verbosity: number = 0) {
-    const { value: booq, diags } = await parseEpub({ filePath });
+    const { value: booq, diags } = await parseEpub(filePath);
     if (!booq) {
         if (verbosity > -1) {
             logRed(`Couldn't parse epub: '${filePath}'`);
@@ -43,7 +43,7 @@ async function processEpubFile(filePath: string, verbosity: number = 0) {
     if (verbosity > -1) {
         console.log(`---- ${filePath}:`);
     }
-    const pathToSave = join(dirname(filePath), `${basename(filePath, '.epub')}.booq`);
+    // const pathToSave = join(dirname(filePath), `${basename(filePath, '.epub')}.booq`);
     // await saveBook(pathToSave, booq);
     if (verbosity > 1) {
         console.log('Metadata:');
@@ -101,6 +101,6 @@ async function saveBook(path: string, book: Booq) {
     return saveString(path, str);
 }
 
-export async function wait(n: number) {
+async function wait(n: number) {
     return new Promise(res => setTimeout(() => res(), n));
 }
