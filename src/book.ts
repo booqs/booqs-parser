@@ -17,7 +17,7 @@ export async function processEpub(epub: EpubFile): Promise<Result<Booq>> {
         if (!value) {
             return { diags };
         }
-        nodes.push(...value);
+        nodes.push(value);
     }
 
     const { value: images, diags: imagesDiags } = await buildImages(nodes, epub);

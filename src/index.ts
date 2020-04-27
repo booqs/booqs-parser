@@ -4,9 +4,7 @@ import { openEpub } from './epubFile';
 import { processEpub } from './book';
 import { getMetadata } from './metadata';
 
-export async function parseEpub({ filePath }: {
-    filePath: string,
-}): Promise<Result<Booq>> {
+export async function parseEpub(filePath: string): Promise<Result<Booq>> {
     const diags: Diagnostic[] = [];
     const { value: file, diags: fileDiags } = await openEpub({ filePath });
     diags.push(...fileDiags);
@@ -21,9 +19,7 @@ export async function parseEpub({ filePath }: {
     };
 }
 
-export async function parseMetadata({ filePath }: {
-    filePath: string,
-}) {
+export async function parseMetadata(filePath: string) {
     const diags: Diagnostic[] = [];
     const { value: epub, diags: fileDiags } = await openEpub({ filePath });
     diags.push(...fileDiags);
