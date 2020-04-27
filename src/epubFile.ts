@@ -17,8 +17,8 @@ export type EpubTocItem = {
 export type EpubFile = {
     rawMetadata: any,
     metadata: EpubMetadata,
-    itemResolver(id: string): Promise<Buffer | undefined>,
-    imageResolver(id: string): Promise<Buffer | undefined>,
+    itemResolver(href: string): Promise<Buffer | undefined>,
+    imageResolver(href: string): Promise<Buffer | undefined>,
     sections(): AsyncGenerator<EpubSection>,
     toc(): Generator<EpubTocItem>,
 };
