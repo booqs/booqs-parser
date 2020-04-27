@@ -7,9 +7,9 @@ import { parseCss, Stylesheet, StyleRule, parseInlineStyle } from './css';
 import { Result, Diagnostic } from './result';
 import { selectXml } from './selectors';
 
-export async function parseSection(section: EpubSection, file: EpubFile): Promise<Result<BooqNode[]>> {
+export async function parseSection(section: EpubSection, file: EpubFile): Promise<Result<BooqNode>> {
     const diags: Diagnostic[] = [];
-    const nodes = await processSectionContent(section.content, {
+    const node = await processSectionContent(section.content, {
         fileName: section.fileName,
         stylesheet: { rules: [] },
         report: d => diags.push(d),
@@ -21,7 +21,7 @@ export async function parseSection(section: EpubSection, file: EpubFile): Promis
         },
     });
     return {
-        value: nodes,
+        value: node,
         diags,
     };
 }
@@ -193,24 +193,18 @@ async function processStyle(style: XmlElement, env: Env) {
 }
 
 async function processBody(body: XmlElement, env: Env) {
-    const nodes = await processBodyXmls(body.children, env);
-    const head = sectionNode(env.fileName);
-    return [head, ...nodes];
+    const node = await processXml(body, env);
+    node.id = env.fileName;
+    return node;
 }
 
-function sectionNode(fileName: string): BooqNode {
-    return {
-        id: fileName,
-    };
-}
-
-async function processBodyXmls(xmls: Xml[], env: Env) {
+async function processXmls(xmls: Xml[], env: Env) {
     return Promise.all(
-        xmls.map(n => processBodyXml(n, env)),
+        xmls.map(n => processXml(n, env)),
     );
 }
 
-async function processBodyXml(xml: Xml, env: Env): Promise<BooqNode> {
+async function processXml(xml: Xml, env: Env): Promise<BooqNode> {
     switch (xml.type) {
         case 'text':
             return {
@@ -231,7 +225,7 @@ async function processXmlElement(element: XmlElement, env: Env): Promise<BooqNod
     const result: BooqNode = {};
     const { id, class: _, style: __, ...rest } = element.attributes;
     if (id !== undefined) {
-        result.id = fullId(id, env.fileName);
+        result.id = id;
     }
     const style = getStyle(element, env);
     if (style) {
@@ -239,25 +233,12 @@ async function processXmlElement(element: XmlElement, env: Env): Promise<BooqNod
     }
     if (Object.keys(rest).length > 0) {
         result.attrs = rest;
-        if (result.attrs.href) {
-            result.attrs.href = fixHref(result.attrs.href);
-        }
     }
     if (element.children) {
-        const children = await processBodyXmls(element.children, env);
+        const children = await processXmls(element.children, env);
         result.children = children;
     }
     return result;
-}
-
-function fullId(id: string, fileName: string) {
-    // return `${fileName}/${id}`;
-    return `${fileName}#${id}`;
-}
-
-function fixHref(href: string) {
-    // return href.replace('#', '/');
-    return href;
 }
 
 function getStyle(xml: Xml, env: Env) {
