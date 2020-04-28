@@ -1,4 +1,4 @@
-import { Booq } from 'booqs-core';
+import { Booq, BooqMeta } from 'booqs-core';
 import { Result, Diagnostic } from './result';
 import { openEpub } from './epubFile';
 import { processEpub } from './book';
@@ -19,9 +19,13 @@ export async function parseEpub(filePath: string): Promise<Result<Booq>> {
     };
 }
 
+export type ExtractedMetadata = {
+    metadata: BooqMeta,
+    cover?: string,
+};
 export async function extractMetadata(filePath: string, options?: {
     extractCover?: boolean,
-}) {
+}): Promise<Result<ExtractedMetadata>> {
     const diags: Diagnostic[] = [];
     const { value: epub, diags: fileDiags } = await openEpub({ filePath });
     diags.push(...fileDiags);
