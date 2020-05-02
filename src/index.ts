@@ -4,12 +4,12 @@ import { openEpub } from './epubFile';
 import { processEpub } from './book';
 import { getMetadata } from './metadata';
 
-export async function parseEpub({ filePath, diagnoser }: {
-    filePath: string,
+export async function parseEpub({ fileData, diagnoser }: {
+    fileData: Buffer,
     diagnoser?: Diagnoser,
 }): Promise<Booq | undefined> {
     diagnoser = diagnoser ?? (() => undefined);
-    const { value: file, diags: fileDiags } = await openEpub({ filePath });
+    const { value: file, diags: fileDiags } = await openEpub({ fileData });
     fileDiags.forEach(diagnoser);
     if (!file) {
         return undefined;
@@ -23,13 +23,13 @@ export type ExtractedMetadata = {
     metadata: BooqMeta,
     cover?: string,
 };
-export async function extractMetadata({ filePath, extractCover, diagnoser }: {
-    filePath: string,
+export async function extractMetadata({ fileData, extractCover, diagnoser }: {
+    fileData: Buffer,
     extractCover?: boolean,
     diagnoser?: Diagnoser,
 }): Promise<ExtractedMetadata | undefined> {
     diagnoser = diagnoser ?? (() => undefined);
-    const { value: epub, diags: fileDiags } = await openEpub({ filePath });
+    const { value: epub, diags: fileDiags } = await openEpub({ fileData });
     fileDiags.forEach(diagnoser);
     if (!epub) {
         return undefined;
