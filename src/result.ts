@@ -2,8 +2,10 @@ import { flatten } from 'booqs-core';
 
 export type Diagnostic = {
     diag: string,
+    severity?: 'error' | 'warning' | 'info',
     data?: object,
 };
+export type Diagnoser = (diag: Diagnostic) => void;
 export type Success<T> = {
     value: T,
     diags: Diagnostic[],
