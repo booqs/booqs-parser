@@ -23,11 +23,11 @@ export type EpubFile = {
     toc(): Generator<EpubTocItem>,
 };
 
-export async function openEpub({ filePath }: {
-    filePath: string,
+export async function openEpub({ fileData }: {
+    fileData: Buffer,
 }): Promise<Result<EpubFile>> {
     try {
-        const epub = await FixedEpub.createAsync(filePath) as FixedEpub;
+        const epub = await FixedEpub.createFromData(fileData) as FixedEpub;
 
         function resolveHref(href: string) {
             href = href.startsWith('../')
@@ -100,6 +100,13 @@ export async function openEpub({ filePath }: {
 
 class FixedEpub extends EPub {
     static libPromise = Promise;
+
+    static createFromData(fileData: Buffer): Promise<FixedEpub> {
+        // Note: very hacky, but under the hood 'epub2' just send
+        // file name to AdmZip constructor, which accepts Buffer as arg.
+        // We should use own simple epub parser instead of 'epub2' though.
+        return FixedEpub.createAsync(fileData as any);
+    }
 
     // This is workaround for epub2 bug. Remove it once fixed
     walkNavMap(branch: any, path: any, idList: any, level: number, pe?: any, parentNcx?: any, ncxIdx?: any) {

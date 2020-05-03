@@ -1,6 +1,6 @@
 #! /usr/bin/env node
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { existsSync, lstat, readdir, writeFile } from 'fs';
+import { existsSync, lstat, readdir, writeFile, readFile } from 'fs';
 import { extname, join, dirname, basename } from 'path';
 import { promisify, inspect } from 'util';
 import { Booq, flatten } from 'booqs-core';
@@ -32,11 +32,18 @@ async function exec() {
 }
 
 async function processEpubFile(filePath: string, verbosity: number = 0) {
-    const { value: booq, diags } = await parseEpub(filePath);
+    const fileData = await promisify(readFile)(filePath);
+    const booq = await parseEpub({
+        fileData,
+        diagnoser: diag => {
+            if (verbosity > -1) {
+                console.log(inspect(diag, false, 8, true));
+            }
+        },
+    });
     if (!booq) {
         if (verbosity > -1) {
             logRed(`Couldn't parse epub: '${filePath}'`);
-            console.log(diags);
         }
         return;
     }
@@ -49,17 +56,8 @@ async function processEpubFile(filePath: string, verbosity: number = 0) {
         console.log('Metadata:');
         console.log(booq.meta);
     }
-    if (diags.length) {
-        if (verbosity > -1) {
-            logRed('Diagnostics:');
-            console.log(inspect(diags, false, 8, true));
-        } else if (verbosity > -2) {
-            console.log(filePath);
-        }
 
-    }
-
-    return diags;
+    return;
 }
 
 async function listFiles(path: string): Promise<string[]> {
